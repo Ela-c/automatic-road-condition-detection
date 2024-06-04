@@ -14,24 +14,9 @@ def get_picture_from_db(record_id, database_file="database.db"):
         The BLOB data (binary image data) retrieved from the database, 
         or None if the record is not found or has no picture.
     """
+    image_url = get_record_by_id(record_id)['image_url']
 
-    # Connect to the database
-    conn = sqlite3.connect(database_file)
-    cursor = conn.cursor()
-
-    # Prepare the SELECT statement
-    sql = """SELECT picture FROM places WHERE id = ?"""
-
-    # Execute the query with the ID
-    cursor.execute(sql, (record_id,))
-    print(cursor.rowcount)
-    # Fetch the first row
-    image_data = cursor.fetchone()[0]
-    print(image_data)
-    # Close the connection
-    conn.close()
-
-    return image_data
+    return image_url
 
 
 def get_all_records(database_file="database.db"):
@@ -101,7 +86,6 @@ def get_record_by_id(record_id, database_file="database.db"):
 
         # Close the connection (done if successful retrieval)
         conn.close()
-
         if row:
             # Convert row data to dictionary (column names as keys, values as elements)
             record_dict = mapRow(row)
@@ -127,7 +111,6 @@ def get_all_accepted_records(database_file="database.db"):
 
     Args:
         database_file: Path to the SQLite3 database file.
-        table_name: Name of the table containing the records.
 
     Returns:
         A list of dictionaries, where each dictionary represents a record with its 
@@ -170,7 +153,7 @@ def get_all_accepted_records(database_file="database.db"):
             conn.close()
 
 
-def insert_record(address, latitude, longitude, database_file="database.db",  image_data=None):
+def insert_record(address, latitude, longitude, image_url, database_file="database.db"):
     """
     This function inserts a record into the 'places' table of a SQLite3 database.
 
@@ -191,10 +174,10 @@ def insert_record(address, latitude, longitude, database_file="database.db",  im
 
     try:
         # Prepare the INSERT statement with placeholders
-        sql = """INSERT INTO places (address, lat, long, picture) VALUES (?, ?, ?, ?)"""
+        sql = """INSERT INTO places (address, lat, long, picture_url) VALUES (?, ?, ?, ?)"""
 
         # Bind the values including the BLOB data
-        cursor.execute(sql, (address, latitude, longitude, image_data))
+        cursor.execute(sql, (address, latitude, longitude, image_url))
 
         # Commit changes to the database
         conn.commit()
@@ -251,4 +234,4 @@ def accept_record(record_id, database_file="database.db"):
 
 
 def mapRow(row):
-    return {"id": row[0], "address": row[1], "lat": row[2], "long": row[3], "accepted": row[5]}
+    return {"id": row[0], "address": row[1], "lat": row[2], "long": row[3], "accepted": row[4], "image_url": row[5]}

@@ -5,13 +5,13 @@ import mediapipe as mp
 
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+import requests
 from utils import visualize, request_location
 from persistance import insert_record
+from asyncio import run
 
-another_counter = 1
 
-
-def run(model: str, width: int, height: int) -> None:
+def runDetection(model: str, width: int, height: int) -> None:
     """Continuously run inference on images
 
     Args:
@@ -19,6 +19,7 @@ def run(model: str, width: int, height: int) -> None:
       width: The width of the frame captured from the camera.
       height: The height of the frame captured from the camera.
     """
+    another_counter = 1
     period = time.time()
     # Variables to calculate FPS
     counter, fps = 0, 0
@@ -89,22 +90,19 @@ def run(model: str, width: int, height: int) -> None:
             vis_image = visualize(current_frame, detection_result_list[0])
             cv2.imshow('object_detector', vis_image)
             # add point to the database
-            if (time.time() - period) > 5:
+            if (time.time() - period) > 10:
                 period = time.time()
-                # location = request_location(
-                #     "http://raspberrypi.local:5000/location")
-
-                address = ''
-                lat = 1
-                long = 2
-                insert_record(address, lat, long, image_data=current_frame)
-                save_image(current_frame, another_counter)
-                counter += 1
+                try:
+                    run(insert_record_wrapper(another_counter))
+                    run(save_image(vis_image, another_counter))
+                except Exception as e:
+                    print(f"Error during database insert or save image: {e}")
+                another_counter += 1
             detection_result_list.clear()
         else:
             cv2.imshow('object_detector', current_frame)
 
-        # time.sleep(2)
+        # time.sleep(1)
         # Stop the program if the ESC key is pressed.
         if cv2.waitKey(1) == 27:
             break
@@ -114,11 +112,25 @@ def run(model: str, width: int, height: int) -> None:
     cv2.destroyAllWindows()
 
 
-def save_image(image, img_counter):
+async def insert_record_wrapper(id):
+    try:
+        image_url = f'images/{id}.jpg'
+        location = request_location(
+            "http://raspberrypi.local:5000/location")
+        lat = location['lat']
+        long = location['long']
+        insert_record("", lat, long, image_url)
+    except requests.exceptions.ConnectionError as e:
+        print(f"Connection error occurred: {e}")
+    except Exception as e:
+        print(f"An error occurred in insert_record_wrapper: {e}")
+
+
+async def save_image(image, img_counter):
     # Save with leading zeros for better sorting
     filename = f'images/{img_counter}.jpg'
     cv2.imwrite(filename, image)
     print(f'Saved {filename}')
 
 
-run('model.tflite', 1280, 720)
+runDetection('model.tflite', 1280, 720)
