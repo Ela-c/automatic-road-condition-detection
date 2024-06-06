@@ -6,7 +6,7 @@ The Automatic Road Condition Survey project aims to automate the road inspection
 
 ## Demonstration Video
 
-[![Watch the demonstration video](https://youtu.be/fx3eOhopYiI)]
+[![Watch the demonstration video](https://img.youtube.com/vi/fx3eOhopYiI/0.jpg)](https://youtu.be/fx3eOhopYiI)
 
 
 ## Background
